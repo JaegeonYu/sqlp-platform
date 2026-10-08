@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk AS build
+FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk AS build
 WORKDIR /src
 COPY gradlew settings.gradle build.gradle gradle.properties ./
 COPY gradle gradle
@@ -9,7 +9,7 @@ COPY api api
 COPY judge judge
 RUN ./gradlew --no-daemon :api:bootJar -x test
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 RUN useradd --system --uid 10001 app
 USER app
 WORKDIR /app
