@@ -9,6 +9,28 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+  session:
+    jdbc:
+      # 테이블은 Flyway(V2)가 만든다
+      initialize-schema: never
+      cleanup-cron: "0 */10 * * * *"
+
+server:
+  # nginx가 넘기는 X-Forwarded-* 를 신뢰한다(내부 프록시 대역만). 클라이언트 IP·리다이렉트 주소에 쓰인다.
+  forward-headers-strategy: native
+  servlet:
+    session:
+      timeout: 8h
+
+sqlp:
+  session:
+    # 쿠키 속성은 SessionCookieConfig에서 지정한다. 로컬 http 개발에서만 false로 둔다.
+    cookie-secure: ${COOKIE_SECURE:true}
+  auth:
+    bootstrap-admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    bootstrap-admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    google-client-id: ${GOOGLE_CLIENT_ID:}
+    google-client-secret: ${GOOGLE_CLIENT_SECRET:}
 
 management:
   endpoints:

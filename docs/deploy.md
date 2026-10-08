@@ -58,6 +58,8 @@ git clone https://github.com/JaegeonYu/sqlp-platform.git
 sudo bash sqlp-platform/infra/server/bootstrap.sh "<sqlp_deploy.pub 내용 한 줄>"
 sudo tailscale up --advertise-tags=tag:sqlp-server --hostname=sqlp --ssh=false
 sudo sed -i 's/^IMAGE_OWNER=.*/IMAGE_OWNER=jaegeonyu/' /opt/sqlp/.env
+# 첫 관리자와 Google 로그인 설정(README의 "인증과 가입" 참고)
+sudo nano /opt/sqlp/.env   # BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_PASSWORD, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 sudo tailscale funnel --bg 8000
 ```
 4. 마지막 명령이 출력하는 `https://sqlp.<tailnet>.ts.net` 주소가 서비스 주소다.
