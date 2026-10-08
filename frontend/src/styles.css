@@ -205,6 +205,75 @@ button:disabled {
   min-width: 0;
 }
 
+.markdown {
+  overflow-wrap: anywhere;
+}
+
+.markdown pre {
+  overflow-x: auto;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.markdown table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+.markdown th,
+.markdown td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+}
+
+details > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendar-head {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.calendar-cell {
+  min-height: 72px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  overflow: hidden;
+}
+
+.calendar-cell.empty {
+  border-color: transparent;
+}
+
+.calendar-day {
+  color: var(--muted);
+}
+
+.calendar-event {
+  margin-top: 2px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--accent-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 code.token {
   display: block;
   word-break: break-all;

@@ -4,6 +4,8 @@ import { useLogout, useMe } from './auth'
 import { LoginPage, PendingPage, SignupPage } from './pages/AuthPages'
 import { GroupPage, HomePage, InvitePage } from './pages/GroupPages'
 import { AdminPage } from './pages/AdminPage'
+import { CoursePage } from './pages/CoursePage'
+import { CohortPage } from './pages/CohortPage'
 
 function TopBar() {
   const me = useMe()
@@ -86,6 +88,22 @@ export default function App() {
           element={
             <RequireLogin>
               <GroupPage />
+            </RequireLogin>
+          }
+        />
+        <Route
+          path="/courses/:courseId"
+          element={
+            <RequireLogin>
+              <CoursePage />
+            </RequireLogin>
+          }
+        />
+        <Route
+          path="/cohorts/:cohortId"
+          element={
+            <RequireLogin>
+              <CohortPage />
             </RequireLogin>
           }
         />

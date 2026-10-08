@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -46,6 +47,12 @@ public class ApiErrorHandler {
 	@ExceptionHandler({ HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class })
 	ResponseEntity<Map<String, String>> handleUnreadable(Exception ex) {
 		return ResponseEntity.badRequest().body(body("VALIDATION", "요청 형식이 올바르지 않습니다."));
+	}
+
+	@ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+	ResponseEntity<Map<String, String>> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+		ApiException conflict = ApiException.editConflict();
+		return ResponseEntity.status(conflict.status()).body(body(conflict.code(), conflict.getMessage()));
 	}
 
 	@ExceptionHandler(Exception.class)

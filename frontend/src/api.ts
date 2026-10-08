@@ -90,6 +90,77 @@ export type AdminUser = {
   reviewedAt: string | null
 }
 
+export type ItemType = 'THEORY_GUIDE' | 'LAB' | 'ASSIGNMENT' | 'PROBLEM'
+export type CohortStatus = 'PLANNED' | 'RUNNING' | 'COMPLETED'
+
+export type Book = { title: string; author: string | null; publisher: string | null; isbn: string | null }
+
+export type CourseSummary = { id: string; title: string; bookTitle: string; chapterCount: number; createdAt: string }
+
+export type ChapterItem = { id: string; position: number; type: ItemType; title: string; bodyMd: string | null; version: number }
+
+export type Chapter = {
+  id: string
+  position: number
+  title: string
+  goals: string | null
+  guideMd: string | null
+  version: number
+  items: ChapterItem[]
+}
+
+export type CourseDetail = {
+  id: string
+  title: string
+  summary: string | null
+  ownerGroupId: string
+  book: Book
+  versionId: string
+  versionNo: number
+  status: 'DRAFT' | 'PUBLISHED'
+  canEdit: boolean
+  chapters: Chapter[]
+}
+
+export type CourseRef = { id: string; title: string; bookTitle: string; versionNo: number }
+
+export type CohortSummary = { id: string; name: string; startsOn: string; status: CohortStatus; course: CourseRef }
+
+export type SessionRow = {
+  chapterId: string
+  position: number
+  chapterTitle: string
+  scheduledAt: string | null
+  presenterId: string | null
+  presenterNickname: string | null
+  note: string | null
+}
+
+export type CohortDetail = {
+  id: string
+  groupId: string
+  name: string
+  startsOn: string
+  status: CohortStatus
+  course: CourseRef
+  canManage: boolean
+  schedule: SessionRow[]
+  members: Member[]
+}
+
+export const itemTypeLabel: Record<ItemType, string> = {
+  THEORY_GUIDE: '이론 가이드',
+  LAB: '실습',
+  ASSIGNMENT: '과제',
+  PROBLEM: '튜닝 문제',
+}
+
+export const cohortStatusLabel: Record<CohortStatus, string> = {
+  PLANNED: '준비 중',
+  RUNNING: '진행 중',
+  COMPLETED: '완료',
+}
+
 export const roleLabel: Record<GroupRole, string> = { OWNER: '방장', MANAGER: '운영진', MEMBER: '멤버' }
 export const statusLabel: Record<UserStatus, string> = {
   PENDING: '승인 대기',

@@ -1,7 +1,18 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, formatDate, roleLabel, type Group, type GroupRole, type Invite, type Member } from '../api'
+import {
+  api,
+  cohortStatusLabel,
+  formatDate,
+  roleLabel,
+  type CohortSummary,
+  type CourseSummary,
+  type Group,
+  type GroupRole,
+  type Invite,
+  type Member,
+} from '../api'
 import { useMe } from '../auth'
 
 function errorText(error: unknown): string | null {
@@ -152,6 +163,9 @@ export function GroupPage() {
         {(changeRole.error || remove.error) && <p className="error">{errorText(changeRole.error ?? remove.error)}</p>}
       </div>
 
+      <CoursesCard groupId={groupId} canManage={canManage} />
+      <CohortsCard groupId={groupId} canManage={canManage} />
+
       {canManage && <InviteCard groupId={groupId} />}
 
       {myRole !== 'OWNER' && me.data && (
@@ -160,6 +174,202 @@ export function GroupPage() {
         </button>
       )}
     </main>
+  )
+}
+
+function CoursesCard({ groupId, canManage }: { groupId: string; canManage: boolean }) {
+  const client = useQueryClient()
+  const navigate = useNavigate()
+  const courses = useQuery({
+    queryKey: ['group', groupId, 'courses'],
+    queryFn: () => api<CourseSummary[]>(`/api/groups/${groupId}/courses`),
+  })
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ bookTitle: '', author: '', publisher: '', title: '', summary: '' })
+  const set = (key: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value })
+  const create = useMutation({
+    mutationFn: () =>
+      api<CourseSummary>(`/api/groups/${groupId}/courses`, {
+        method: 'POST',
+        body: {
+          book: { title: form.bookTitle, author: form.author, publisher: form.publisher },
+          title: form.title,
+          summary: form.summary,
+        },
+      }),
+    onSuccess: (course) => {
+      client.invalidateQueries({ queryKey: ['group', groupId, 'courses'] })
+      navigate(`/courses/${course.id}`)
+    },
+  })
+
+  return (
+    <div className="card">
+      <div className="row">
+        <h2 className="grow" style={{ margin: 0 }}>
+          코스
+        </h2>
+        {canManage && !open && (
+          <button className="secondary" onClick={() => setOpen(true)}>
+            새 코스
+          </button>
+        )}
+      </div>
+      <p className="muted">책 한 권을 끝까지 공부하는 과정입니다. 장마다 가이드·실습·과제를 담습니다.</p>
+      <ul className="list">
+        {courses.data?.map((c) => (
+          <li key={c.id}>
+            <Link className="grow" to={`/courses/${c.id}`}>
+              {c.title}
+            </Link>
+            <span className="muted">『{c.bookTitle}』 · {c.chapterCount}장</span>
+          </li>
+        ))}
+      </ul>
+      {courses.data?.length === 0 && !open && <p className="muted">아직 코스가 없습니다.</p>}
+      {open && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            create.mutate()
+          }}
+        >
+          <label>책 제목</label>
+          <input required maxLength={200} value={form.bookTitle} onChange={set('bookTitle')} placeholder="예: 친절한 SQL 튜닝" />
+          <div className="row">
+            <div className="grow">
+              <label>저자</label>
+              <input maxLength={200} value={form.author} onChange={set('author')} />
+            </div>
+            <div className="grow">
+              <label>출판사</label>
+              <input maxLength={100} value={form.publisher} onChange={set('publisher')} />
+            </div>
+          </div>
+          <label>코스 이름</label>
+          <input required maxLength={100} value={form.title} onChange={set('title')} placeholder="예: 친절한 SQL 튜닝 완주 코스" />
+          <label>소개 (선택)</label>
+          <textarea rows={2} maxLength={1000} value={form.summary} onChange={set('summary')} />
+          {create.error && <p className="error">{errorText(create.error)}</p>}
+          <div className="row" style={{ marginTop: 12 }}>
+            <button type="submit" disabled={create.isPending}>
+              만들기
+            </button>
+            <button type="button" className="secondary" onClick={() => setOpen(false)}>
+              취소
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
+
+function CohortsCard({ groupId, canManage }: { groupId: string; canManage: boolean }) {
+  const client = useQueryClient()
+  const navigate = useNavigate()
+  const cohorts = useQuery({
+    queryKey: ['group', groupId, 'cohorts'],
+    queryFn: () => api<CohortSummary[]>(`/api/groups/${groupId}/cohorts`),
+  })
+  const courses = useQuery({
+    queryKey: ['group', groupId, 'courses'],
+    queryFn: () => api<CourseSummary[]>(`/api/groups/${groupId}/courses`),
+  })
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ courseId: '', name: '', startsOn: '', meetingTime: '20:00', intervalDays: 7 })
+  const create = useMutation({
+    mutationFn: () =>
+      api<CohortSummary>(`/api/groups/${groupId}/cohorts`, {
+        method: 'POST',
+        body: { ...form, courseId: form.courseId || courses.data?.[0]?.id },
+      }),
+    onSuccess: (cohort) => {
+      client.invalidateQueries({ queryKey: ['group', groupId, 'cohorts'] })
+      navigate(`/cohorts/${cohort.id}`)
+    },
+  })
+
+  return (
+    <div className="card">
+      <div className="row">
+        <h2 className="grow" style={{ margin: 0 }}>
+          기수
+        </h2>
+        {canManage && !open && (courses.data?.length ?? 0) > 0 && (
+          <button className="secondary" onClick={() => setOpen(true)}>
+            새 기수
+          </button>
+        )}
+      </div>
+      <p className="muted">코스를 정해진 일정으로 진행하는 한 번의 스터디입니다.</p>
+      <ul className="list">
+        {cohorts.data?.map((c) => (
+          <li key={c.id}>
+            <Link className="grow" to={`/cohorts/${c.id}`}>
+              {c.name}
+            </Link>
+            <span className="muted">
+              {c.course.title} · {c.startsOn} 시작
+            </span>
+            <span className="badge">{cohortStatusLabel[c.status]}</span>
+          </li>
+        ))}
+      </ul>
+      {cohorts.data?.length === 0 && !open && (
+        <p className="muted">{(courses.data?.length ?? 0) > 0 ? '아직 기수가 없습니다.' : '코스를 먼저 만들어야 기수를 열 수 있습니다.'}</p>
+      )}
+      {open && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            create.mutate()
+          }}
+        >
+          <label>코스</label>
+          <select value={form.courseId} onChange={(e) => setForm({ ...form, courseId: e.target.value })}>
+            {courses.data?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title} ({c.chapterCount}장)
+              </option>
+            ))}
+          </select>
+          <label>기수 이름</label>
+          <input required maxLength={100} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="예: 1기" />
+          <div className="row">
+            <div className="grow">
+              <label>첫 모임 날짜</label>
+              <input required type="date" value={form.startsOn} onChange={(e) => setForm({ ...form, startsOn: e.target.value })} />
+            </div>
+            <div className="grow">
+              <label>모임 시각</label>
+              <input required type="time" value={form.meetingTime} onChange={(e) => setForm({ ...form, meetingTime: e.target.value })} />
+            </div>
+            <div className="grow">
+              <label>간격(일)</label>
+              <input
+                required
+                type="number"
+                min={1}
+                max={31}
+                value={form.intervalDays}
+                onChange={(e) => setForm({ ...form, intervalDays: Number(e.target.value) })}
+              />
+            </div>
+          </div>
+          <p className="muted">장마다 일정이 하나씩 자동으로 만들어집니다. 일정과 발표자는 기수 화면에서 바꿀 수 있습니다.</p>
+          {create.error && <p className="error">{errorText(create.error)}</p>}
+          <div className="row" style={{ marginTop: 12 }}>
+            <button type="submit" disabled={create.isPending}>
+              만들기
+            </button>
+            <button type="button" className="secondary" onClick={() => setOpen(false)}>
+              취소
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   )
 }
 
