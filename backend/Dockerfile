@@ -1,6 +1,6 @@
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk AS build
 WORKDIR /src
-COPY gradlew settings.gradle build.gradle ./
+COPY gradlew settings.gradle build.gradle gradle.properties ./
 COPY gradle gradle
 COPY api/build.gradle api/
 COPY judge/build.gradle judge/
