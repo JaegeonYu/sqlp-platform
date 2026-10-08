@@ -9,10 +9,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: deploy
-  cancel-in-progress: false
-
 jobs:
   images:
     runs-on: ubuntu-latest
@@ -63,6 +59,11 @@ jobs:
     runs-on: ubuntu-latest
     # Settings > Environments > production: 필수 승인자(본인), main 브랜치만 허용
     environment: production
+    # 배포만 한 번에 하나씩 실행한다. 이미지 빌드·검사는 승인 대기와 관계없이 매번 돈다.
+    # 승인 대기 중에 새 커밋이 오면 오래된 배포는 취소되고 최신 커밋만 남는다.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: true
     permissions:
       contents: read
       id-token: write
