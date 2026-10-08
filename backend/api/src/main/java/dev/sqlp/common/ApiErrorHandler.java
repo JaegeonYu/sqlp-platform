@@ -5,6 +5,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +54,14 @@ public class ApiErrorHandler {
 	ResponseEntity<Map<String, String>> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
 		ApiException conflict = ApiException.editConflict();
 		return ResponseEntity.status(conflict.status()).body(body(conflict.code(), conflict.getMessage()));
+	}
+
+	/** 동시 요청이 같은 유니크 키를 만들려 한 경우 등 */
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	ResponseEntity<Map<String, String>> handleIntegrity(DataIntegrityViolationException ex) {
+		log.warn("데이터 무결성 위반: {}", ex.getMostSpecificCause().getMessage());
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+			.body(body("CONFLICT", "동시에 같은 요청이 처리되었습니다. 새로 불러온 뒤 다시 시도하세요."));
 	}
 
 	@ExceptionHandler(Exception.class)

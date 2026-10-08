@@ -148,6 +148,89 @@ export type CohortDetail = {
   members: Member[]
 }
 
+export type SubmissionStatus = 'DRAFT' | 'SUBMITTED' | 'CHANGES_REQUESTED' | 'APPROVED'
+
+export type AssignmentRow = {
+  itemId: string
+  title: string
+  descriptionMd: string | null
+  chapterPosition: number
+  chapterTitle: string
+  dueAt: string | null
+  myStatus: SubmissionStatus | null
+  submittedCount: number
+  approvedCount: number
+}
+
+export type Progress = {
+  assignments: { itemId: string; title: string; chapterPosition: number; dueAt: string | null }[]
+  members: {
+    userId: string
+    nickname: string
+    cells: { itemId: string; submissionId: string | null; status: SubmissionStatus | null; late: boolean }[]
+  }[]
+}
+
+export type SubmissionSummary = {
+  id: string
+  authorId: string
+  authorNickname: string
+  status: SubmissionStatus
+  submittedAt: string | null
+  late: boolean
+  commentCount: number
+}
+
+export type SubmissionList = {
+  itemId: string
+  title: string
+  descriptionMd: string | null
+  dueAt: string | null
+  canViewOthers: boolean
+  mine: SubmissionSummary | null
+  others: SubmissionSummary[]
+}
+
+export type ReviewComment = {
+  id: string
+  authorId: string
+  authorNickname: string
+  parentId: string | null
+  decision: 'APPROVE' | 'REQUEST_CHANGES' | null
+  bodyMd: string
+  deleted: boolean
+  createdAt: string
+  editedAt: string | null
+  canModify: boolean
+}
+
+export type SubmissionDetail = {
+  id: string
+  cohortId: string
+  itemId: string
+  title: string
+  descriptionMd: string | null
+  dueAt: string | null
+  authorId: string
+  authorNickname: string
+  bodyMd: string
+  status: SubmissionStatus
+  submittedAt: string | null
+  late: boolean
+  updatedAt: string
+  version: number
+  canEdit: boolean
+  canReview: boolean
+  comments: ReviewComment[]
+}
+
+export const submissionStatusLabel: Record<SubmissionStatus, string> = {
+  DRAFT: '작성 중',
+  SUBMITTED: '리뷰 대기',
+  CHANGES_REQUESTED: '수정 요청',
+  APPROVED: '승인',
+}
+
 export const itemTypeLabel: Record<ItemType, string> = {
   THEORY_GUIDE: '이론 가이드',
   LAB: '실습',

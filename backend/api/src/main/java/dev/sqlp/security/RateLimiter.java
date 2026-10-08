@@ -28,7 +28,10 @@ public class RateLimiter {
 		LOGIN_PER_EMAIL(10, Duration.ofMinutes(15)),
 
 		/** 사용자별 초대 링크 확인·수락: 10분에 30회 */
-		INVITE_PER_USER(30, Duration.ofMinutes(10));
+		INVITE_PER_USER(30, Duration.ofMinutes(10)),
+
+		/** 사용자별 리뷰 코멘트·리뷰 작성: 10분에 60회 */
+		COMMENT_PER_USER(60, Duration.ofMinutes(10));
 
 		private final long capacity;
 

@@ -1,11 +1,15 @@
-import type { ReactNode } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLogout, useMe } from './auth'
 import { LoginPage, PendingPage, SignupPage } from './pages/AuthPages'
 import { GroupPage, HomePage, InvitePage } from './pages/GroupPages'
-import { AdminPage } from './pages/AdminPage'
-import { CoursePage } from './pages/CoursePage'
-import { CohortPage } from './pages/CohortPage'
+
+// 마크다운 렌더러를 쓰는 화면은 처음 열 때 불러온다(초기 번들 축소)
+const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })))
+const CoursePage = lazy(() => import('./pages/CoursePage').then((m) => ({ default: m.CoursePage })))
+const CohortPage = lazy(() => import('./pages/CohortPage').then((m) => ({ default: m.CohortPage })))
+const AssignmentPage = lazy(() => import('./pages/SubmissionPages').then((m) => ({ default: m.AssignmentPage })))
+const SubmissionPage = lazy(() => import('./pages/SubmissionPages').then((m) => ({ default: m.SubmissionPage })))
 
 function TopBar() {
   const me = useMe()
@@ -39,7 +43,7 @@ function RequireLogin({ children, admin = false }: { children: ReactNode; admin?
     return <Navigate to="/login" replace />
   }
   if (admin && me.data.systemRole !== 'ADMIN') return <Navigate to="/" replace />
-  return <>{children}</>
+  return <Suspense fallback={<main className="muted">불러오는 중…</main>}>{children}</Suspense>
 }
 
 function sessionStorageSafeSet(key: string, value: string) {
@@ -104,6 +108,22 @@ export default function App() {
           element={
             <RequireLogin>
               <CohortPage />
+            </RequireLogin>
+          }
+        />
+        <Route
+          path="/cohorts/:cohortId/assignments/:itemId"
+          element={
+            <RequireLogin>
+              <AssignmentPage />
+            </RequireLogin>
+          }
+        />
+        <Route
+          path="/submissions/:submissionId"
+          element={
+            <RequireLogin>
+              <SubmissionPage />
             </RequireLogin>
           }
         />

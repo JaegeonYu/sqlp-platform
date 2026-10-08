@@ -211,6 +211,23 @@ public class CourseService {
 		return this.chapters.findByCourseVersionIdOrderByPosition(versionId);
 	}
 
+	/** 버전 안의 과제(ASSIGNMENT) 항목을 장 순서·항목 순서대로 돌려준다. 권한 확인은 호출하는 쪽이 한다. */
+	public List<AssignmentRef> assignmentsOf(UUID versionId) {
+		List<Chapter> chapterList = chaptersOf(versionId);
+		Map<UUID, Chapter> byId = chapterList.stream().collect(Collectors.toMap(Chapter::getId, Function.identity()));
+		return this.items.findByChapterIdInOrderByPosition(byId.keySet())
+			.stream()
+			.filter((item) -> item.getType() == ChapterItem.Type.ASSIGNMENT)
+			.sorted(java.util.Comparator.comparingInt((ChapterItem item) -> byId.get(item.getChapterId()).getPosition())
+				.thenComparingInt(ChapterItem::getPosition))
+			.map((item) -> {
+				Chapter chapter = byId.get(item.getChapterId());
+				return new AssignmentRef(item.getId(), item.getTitle(), item.getBodyMd(), chapter.getId(),
+						chapter.getPosition(), chapter.getTitle());
+			})
+			.toList();
+	}
+
 	private Course editableCourse(SessionUser actor, UUID courseId) {
 		Course course = this.courses.findById(courseId).orElseThrow(ApiException::notFound);
 		this.groupAccess.require(actor, course.getOwnerGroupId(), GroupRole.MANAGER);
@@ -274,6 +291,10 @@ public class CourseService {
 	}
 
 	public record CourseRef(UUID id, String title, String bookTitle, int versionNo) {
+	}
+
+	public record AssignmentRef(UUID itemId, String title, String descriptionMd, UUID chapterId, int chapterPosition,
+			String chapterTitle) {
 	}
 
 	public record CourseDetail(UUID id, String title, String summary, UUID ownerGroupId, BookInput book,

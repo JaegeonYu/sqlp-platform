@@ -133,6 +133,19 @@ public class CohortService {
 		session.update(scheduledAt, presenterId, (note == null || note.isBlank()) ? null : note.strip());
 	}
 
+	/** 권한 확인 없이 기수를 찾는다. 호출하는 쪽이 그룹 권한을 확인한다. */
+	public Cohort find(UUID cohortId) {
+		return this.cohorts.findById(cohortId).orElseThrow(ApiException::notFound);
+	}
+
+	/** 장별 모임 일시(과제 마감 기준). 일정이 없는 장은 빠진다. */
+	public Map<UUID, Instant> meetingTimes(UUID cohortId) {
+		return this.sessions.findByCohortId(cohortId)
+			.stream()
+			.filter((s) -> s.getScheduledAt() != null)
+			.collect(Collectors.toMap(CohortSession::getChapterId, CohortSession::getScheduledAt));
+	}
+
 	public record CohortSummary(UUID id, String name, LocalDate startsOn, Cohort.Status status, CourseRef course) {
 
 		static CohortSummary of(Cohort cohort, CourseRef course) {

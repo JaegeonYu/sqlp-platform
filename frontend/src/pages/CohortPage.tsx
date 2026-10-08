@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, cohortStatusLabel, type CohortDetail, type CohortStatus, type SessionRow } from '../api'
+import { CohortAssignments } from './SubmissionPages'
 
 function errorText(error: unknown): string | null {
   return error instanceof Error ? error.message : null
@@ -61,6 +62,8 @@ export function CohortPage() {
           코스 <Link to={`/courses/${c.course.id}`}>{c.course.title}</Link> (『{c.course.bookTitle}』 v{c.course.versionNo}) · {c.startsOn} 시작
         </p>
       </div>
+
+      <CohortAssignments cohortId={cohortId} />
 
       <MonthCalendar schedule={c.schedule} />
 
