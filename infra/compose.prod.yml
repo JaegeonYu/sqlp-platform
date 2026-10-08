@@ -1,0 +1,66 @@
+# 운영 서버용 compose. 서버의 /opt/sqlp/ 에 deploy.sh, .env 와 함께 둔다.
+#   이미지 태그(IMAGE_TAG)는 deploy.sh 가 git SHA로 지정한다.
+#   web 은 127.0.0.1 에만 바인딩하고, 외부 노출은 Tailscale Funnel(이후 Cloudflare Tunnel)이 맡는다.
+name: sqlp-platform
+
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  postgres:
+    <<: *hardening
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: sqlp
+      POSTGRES_USER: sqlp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    networks: [app]
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sqlp -d sqlp"]
+      interval: 5s
+      retries: 20
+
+  api:
+    <<: *hardening
+    image: ghcr.io/${IMAGE_OWNER:?set in .env}/sqlp-platform-api:${IMAGE_TAG:?set by deploy.sh}
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sqlp
+      DB_USERNAME: sqlp
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+    read_only: true
+    tmpfs:
+      - /tmp
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [app]
+    mem_limit: 1536m
+
+  web:
+    <<: *hardening
+    image: ghcr.io/${IMAGE_OWNER}/sqlp-platform-web:${IMAGE_TAG}
+    read_only: true
+    tmpfs:
+      - /tmp
+    ports:
+      - "127.0.0.1:8000:8080"
+    depends_on: [api]
+    networks: [app]
+    mem_limit: 128m
+
+networks:
+  app:
+
+volumes:
+  pgdata:

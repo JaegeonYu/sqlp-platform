@@ -1,0 +1,63 @@
+# SQLP 스터디 플랫폼
+#   기동:            docker compose -f infra/compose.yml --env-file infra/.env up -d --build
+#   채점 DB 포함:     위 명령에 --profile judge 추가 (Oracle 23ai Free, 메모리 2GB 이상 필요)
+name: sqlp-platform
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: sqlp
+      POSTGRES_USER: sqlp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in infra/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    networks: [app]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sqlp -d sqlp"]
+      interval: 5s
+      retries: 20
+
+  api:
+    build: ../backend
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sqlp
+      DB_USERNAME: sqlp
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [app, judge]
+
+  web:
+    build: ../frontend
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8000}:8080"
+    depends_on: [api]
+    networks: [app]
+
+  # 채점 전용 DB. 포트를 공개하지 않고 내부 네트워크(judge)에서만 접근한다.
+  oracle:
+    image: gvenzl/oracle-free:23-slim
+    profiles: [judge]
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:?set in infra/.env}
+      TZ: Asia/Seoul
+    volumes:
+      - oradata:/opt/oracle/oradata
+    networks: [judge]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+networks:
+  app:
+  judge:
+    internal: true
+
+volumes:
+  pgdata:
+  oradata:

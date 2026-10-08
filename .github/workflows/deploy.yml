@@ -1,0 +1,87 @@
+name: deploy
+
+# main 에 반영되면 arm64 이미지를 만들어 GHCR에 올리고, 승인 후 OCI 서버에 배포한다.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        component: [api, web]
+        include:
+          - component: api
+            context: backend
+          - component: web
+            context: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: image
+        run: echo "ref=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/sqlp-platform-${{ matrix.component }}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      # 빌드 단계는 러너(amd64)에서 네이티브로, 최종 이미지만 arm64로 만든다
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/arm64
+          load: true
+          tags: ${{ steps.image.outputs.ref }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+      - name: 이미지 취약점 검사
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.ref }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+      - run: docker push "${{ steps.image.outputs.ref }}"
+
+  deploy:
+    needs: images
+    runs-on: ubuntu-latest
+    # Settings > Environments > production: 필수 승인자(본인), main 브랜치만 허용
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      # GitHub OIDC로 Tailscale에 임시 노드로 붙는다(저장된 Tailscale 비밀값 없음)
+      - uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4.2.0
+        with:
+          oauth-client-id: ${{ vars.TS_OIDC_CLIENT_ID }}
+          audience: ${{ vars.TS_OIDC_AUDIENCE }}
+          tags: tag:ci
+      - name: 배포
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            "deploy@${DEPLOY_HOST}" "deploy ${GITHUB_SHA}"
