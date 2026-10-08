@@ -13,7 +13,11 @@ GitHub Actions ─(OIDC)─> Tailscale(tag:ci) ─SSH 22─> 서버(tag:sqlp-ser
 - Billing & Cost Management → Budgets → **예산 $1, 알림 임계 100%**, 받을 이메일 지정.
 
 ## 2. 서버 생성
-1. 내 PC(PowerShell)에서 접속용 키를 만든다: `ssh-keygen -t ed25519 -f $HOME\.ssh\oci_sqlp`
+1. 내 PC에서 접속용 키를 만든다(cmd·PowerShell 공통). `.ssh` 폴더가 없으면 ssh-keygen이 실패하므로 먼저 만든다.
+   ```
+   mkdir C:\Users\<사용자>\.ssh
+   ssh-keygen -t ed25519 -f C:\Users\<사용자>\.ssh\oci_sqlp
+   ```
 2. Compute → Instances → Create instance
    - Image: **Canonical Ubuntu 24.04** (aarch64, Minimal 아닌 것)
    - Shape: Ampere **VM.Standard.A1.Flex**, 4 OCPU / 24GB. "Always Free-eligible" 표시를 확인한다.
@@ -46,8 +50,8 @@ GitHub Actions ─(OIDC)─> Tailscale(tag:ci) ─SSH 22─> 서버(tag:sqlp-ser
 3. DNS 탭에서 **MagicDNS**와 **HTTPS Certificates**를 켠다.
 
 ## 4. 서버 초기 설정
-1. 내 PC에서 배포 전용 키를 만든다: `ssh-keygen -t ed25519 -f $HOME\.ssh\sqlp_deploy -N '""' -C github-deploy`
-2. 서버에 접속한다: `ssh -i $HOME\.ssh\oci_sqlp ubuntu@<공인IP>`
+1. 내 PC에서 배포 전용 키를 만든다: `ssh-keygen -t ed25519 -f C:\Users\<사용자>\.ssh\sqlp_deploy -C github-deploy` (암호는 Enter로 비워 둔다)
+2. 서버에 접속한다: `ssh -i C:\Users\<사용자>\.ssh\oci_sqlp ubuntu@<공인IP>`
 3. 서버에서 실행한다:
 ```bash
 git clone https://github.com/JaegeonYu/sqlp-platform.git
@@ -59,7 +63,7 @@ sudo tailscale funnel --bg 8000
 4. 마지막 명령이 출력하는 `https://sqlp.<tailnet>.ts.net` 주소가 서비스 주소다.
 
 ## 5. 공인 SSH 닫기
-1. 내 PC에서 Tailscale 경유 접속을 확인한다: `ssh -i $HOME\.ssh\oci_sqlp ubuntu@sqlp`
+1. 내 PC에서 Tailscale 경유 접속을 확인한다: `ssh -i C:\Users\<사용자>\.ssh\oci_sqlp ubuntu@sqlp`
 2. 접속되면 서버에서 `sudo ufw delete allow 22/tcp`를 실행한다.
 3. OCI Security List의 Ingress 22 규칙을 **삭제**한다.
 4. 이제 서버의 인바운드 포트는 0개다.
