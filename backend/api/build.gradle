@@ -15,7 +15,7 @@ dependencies {
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	// Argon2PasswordEncoder 구현체
 	implementation 'org.bouncycastle:bcprov-jdk18on:1.86'
-	implementation 'com.bucket4j:bucket4j_jdk17-core:8.21.0'
+	implementation 'com.bucket4j:bucket4j_jdk17-core:8.22.0'
 	implementation 'com.github.ben-manes.caffeine:caffeine'
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
